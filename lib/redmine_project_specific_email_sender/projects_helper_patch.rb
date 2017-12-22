@@ -1,13 +1,13 @@
 module RedmineProjectSpecificEmailSender
   module ProjectsHelperPatch
-    
+
     def self.included(base)
       base.send(:include, InstanceMethods)
       base.class_eval do
         alias_method_chain :project_settings_tabs, :outbound_email_tab
       end
     end
-    
+
     module InstanceMethods
       def project_settings_tabs_with_outbound_email_tab
         # Grab standard set of tabs
@@ -21,6 +21,6 @@ module RedmineProjectSpecificEmailSender
         tabs
       end
     end
-    
+
   end
 end
