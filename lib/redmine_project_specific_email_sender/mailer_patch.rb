@@ -40,10 +40,18 @@ module RedmineProjectSpecificEmailSender
           end
 
           if @message_id_object
-            headers[:message_id] = "<#{self.class.message_id_for(@message_id_object)}>"
+            if defined? @user
+              headers[:message_id] = "<#{self.class.message_id_for(@message_id_object, @user)}>"
+            else
+              headers[:message_id] = "<#{self.class.message_id_for(@message_id_object)}>"
+            end
           end
           if @references_objects
-            headers[:references] = @references_objects.collect {|o| "<#{self.class.references_for(o)}>"}.join(' ')
+            if defined? @user
+              headers[:references] = @references_objects.collect {|o| "<#{self.class.references_for(o, @user)}>"}.join(' ')
+            else
+              headers[:references] = @references_objects.collect {|o| "<#{self.class.references_for(o)}>"}.join(' ')
+            end
           end
 
           m = if block_given?
@@ -58,13 +66,33 @@ module RedmineProjectSpecificEmailSender
           m
         end
 
-        alias_method_chain :mail_from, :project_specific_email
-        alias_method_chain :issue_add, :project_specific_email
-        alias_method_chain :issue_edit, :project_specific_email
-        alias_method_chain :document_added, :project_specific_email
-        alias_method_chain :attachments_added, :project_specific_email
-        alias_method_chain :news_added, :project_specific_email
-        alias_method_chain :message_posted, :project_specific_email
+        # alias_method_chain :mail_from, :project_specific_email
+        alias_method :mail_from_without_project_specific_email, :mail_from
+        alias_method :mail_from, :mail_from_with_project_specific_email
+
+        # alias_method_chain :issue_add, :project_specific_email
+        alias_method :issue_add_without_project_specific_email, :issue_add
+        alias_method :issue_add, :issue_add_with_project_specific_email
+
+        # alias_method_chain :issue_edit, :project_specific_email
+        alias_method :issue_edit_without_project_specific_email, :issue_edit
+        alias_method :issue_edit, :issue_edit_with_project_specific_email
+
+        # alias_method_chain :document_added, :project_specific_email
+        alias_method :document_added_without_project_specific_email, :document_added
+        alias_method :document_added, :document_added_with_project_specific_email
+
+        # alias_method_chain :attachments_added, :project_specific_email
+        alias_method :attachments_added_without_project_specific_email, :attachments_added
+        alias_method :attachments_added, :attachments_added_with_project_specific_email
+
+        # alias_method_chain :news_added, :project_specific_email
+        alias_method :news_added_without_project_specific_email, :news_added
+        alias_method :news_added, :news_added_with_project_specific_email
+
+        # alias_method_chain :message_posted, :project_specific_email
+        alias_method :message_posted_without_project_specific_email, :message_posted
+        alias_method :message_posted, :message_posted_with_project_specific_email
       end
     end
 
@@ -78,32 +106,38 @@ module RedmineProjectSpecificEmailSender
       end
 
       def issue_add_with_project_specific_email(*args)
-        @project = args.first.project
+        @issue = args.find{|arg| arg.is_a? Issue}
+        @project = @issue.project
         issue_add_without_project_specific_email(*args)
       end
 
       def issue_edit_with_project_specific_email(*args)
-        @project = args.first.journalized.project
+        @journal = args.find{|arg| arg.is_a? Journal}
+        @project = @journal.journalized.project
         issue_edit_without_project_specific_email(*args)
       end
 
       def document_added_with_project_specific_email(*args)
-        @project = args.first.project
+        @document = args.find{|arg| arg.is_a? Document}
+        @project = @document.project
         document_added_without_project_specific_email(*args)
       end
 
       def attachments_added_with_project_specific_email(*args)
-        @project = args.first.first.container.project
+        @attachments = args.find{|arg| arg.is_a? News}
+        @project = @attachments.first.container.project
         attachments_added_without_project_specific_email(*args)
       end
 
       def news_added_with_project_specific_email(*args)
-        @project = args.first.project
+        @news = args.find{|arg| arg.is_a? News}
+        @project = @news.project
         news_added_without_project_specific_email(*args)
       end
 
       def message_posted_with_project_specific_email(*args)
-        @project = args.first.board.project
+        @message = args.find{|arg| arg.is_a? Message}
+        @project = @message.board.project
         message_posted_without_project_specific_email(*args)
       end
     end

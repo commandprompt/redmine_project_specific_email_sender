@@ -1,7 +1,7 @@
 class ProjectEmailsController < ApplicationController
   unloadable
-  
-  before_filter :load_project, :authorize
+
+  before_action :load_project, :authorize
 
   def update
     url = project_settings_tab_url
@@ -15,16 +15,16 @@ class ProjectEmailsController < ApplicationController
     end
     redirect_to url
   end
-  
+
   def destroy
     @project.project_email.destroy if @project.project_email
     @project.reload
 
     redirect_to project_settings_tab_url, :notice => l(:notice_email_reset)
   end
-  
+
   private
-  
+
   def load_project
     @project = Project.find(params[:project_id])
   end
