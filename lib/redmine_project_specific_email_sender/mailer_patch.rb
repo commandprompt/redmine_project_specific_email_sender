@@ -5,6 +5,23 @@ module RedmineProjectSpecificEmailSender
       base.class_eval do
 
         def mail(headers={}, &block)
+          # Add a display name to the From field if Setting.mail_from does not
+          # include it
+          begin
+            mail_from = Mail::Address.new(Setting.mail_from)
+            if mail_from.display_name.blank? && mail_from.comments.blank?
+              mail_from.display_name =
+                @author&.logged? ? @author.name : Setting.app_title
+            end
+            from = mail_from.format
+            list_id = "<#{mail_from.address.to_s.tr('@', '.')}>"
+          rescue Mail::Field::IncompleteParseError
+            # Use Setting.mail_from as it is if Mail::Address cannot parse it
+            # (probably the emission address is not RFC compliant)
+            from = Setting.mail_from.to_s
+            list_id = "<#{from.tr('@', '.')}>"
+          end
+
           headers.reverse_merge! 'X-Mailer' => 'Redmine',
                   'X-Redmine-Host' => Setting.host_name,
                   'X-Redmine-Site' => Setting.app_title,
@@ -19,6 +36,7 @@ module RedmineProjectSpecificEmailSender
               headers[key] = self.class.email_addresses(headers[key])
             end
           end
+
           # Removes the author from the recipients and cc
           # if the author does not want to receive notifications
           # about what the author do
@@ -30,13 +48,6 @@ module RedmineProjectSpecificEmailSender
 
           if @author && @author.logged?
             redmine_headers 'Sender' => @author.login
-          end
-
-          # Blind carbon copy recipients
-          if Setting.bcc_recipients?
-            headers[:bcc] = [headers[:to], headers[:cc]].flatten.uniq.reject(&:blank?)
-            headers[:to] = nil
-            headers[:cc] = nil
           end
 
           if @message_id_object
@@ -54,7 +65,7 @@ module RedmineProjectSpecificEmailSender
             end
           end
 
-          m = if block_given?
+          if block
             super headers, &block
           else
             super headers do |format|
@@ -62,8 +73,6 @@ module RedmineProjectSpecificEmailSender
               format.html unless Setting.plain_text_mail?
             end
           end
-          set_language_if_valid @initial_language
-          m
         end
 
         # alias_method_chain :mail_from, :project_specific_email
