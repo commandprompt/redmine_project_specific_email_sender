@@ -8,13 +8,13 @@ module RedmineProjectSpecificEmailSender
           # Add a display name to the From field if Setting.mail_from does not
           # include it
           begin
-            mail_from = Mail::Address.new(Setting.mail_from)
-            if mail_from.display_name.blank? && mail_from.comments.blank?
-              mail_from.display_name =
+            mail_from_address = Mail::Address.new(mail_from)
+            if mail_from_address.display_name.blank? && mail_from_address.comments.blank?
+              mail_from_address.display_name =
                 @author&.logged? ? @author.name : Setting.app_title
             end
-            from = mail_from.format
-            list_id = "<#{mail_from.address.to_s.tr('@', '.')}>"
+            from = mail_from_address.format
+            list_id = "<#{mail_from_address.address.to_s.tr('@', '.')}>"
           rescue Mail::Field::IncompleteParseError
             # Use Setting.mail_from as it is if Mail::Address cannot parse it
             # (probably the emission address is not RFC compliant)
