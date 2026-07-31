@@ -51,18 +51,10 @@ module RedmineProjectSpecificEmailSender
           end
 
           if @message_id_object
-            if defined? @user
-              headers[:message_id] = "<#{self.class.message_id_for(@message_id_object, @user)}>"
-            else
-              headers[:message_id] = "<#{self.class.message_id_for(@message_id_object)}>"
-            end
+            headers[:message_id] = "<#{self.class.message_id_for(@message_id_object, @user)}>"
           end
           if @references_objects
-            if defined? @user
-              headers[:references] = @references_objects.collect {|o| "<#{self.class.references_for(o, @user)}>"}.join(' ')
-            else
-              headers[:references] = @references_objects.collect {|o| "<#{self.class.references_for(o)}>"}.join(' ')
-            end
+            headers[:references] = @references_objects.collect {|o| "<#{self.class.references_for(o, @user)}>"}.join(' ')
           end
 
           if block
